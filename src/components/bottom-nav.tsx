@@ -5,9 +5,8 @@ import { usePathname } from 'next/navigation'
 
 const tabs = [
   { href: '/today', label: 'Today' },
-  { href: '/challenges', label: 'Challenges' },
-  { href: '/bank', label: 'Bank' },
-  { href: '/profile', label: 'Profile' },
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/friends', label: 'Friends' },
 ]
 
 export function BottomNav() {

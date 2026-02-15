@@ -128,3 +128,44 @@ create policy "members_read_ledger" on money_ledger for select using (
 );
 
 create policy "self_read_achievements" on user_achievements for select using (user_id = auth.uid());
+
+-- v1.1 social/slip/baseline extensions
+alter table challenge_members add column if not exists baseline_value int default 0;
+alter table action_logs add column if not exists source text default 'manual';
+alter table challenges add column if not exists duration_days int default 30;
+alter table challenges add column if not exists prize_uah int;
+
+create table if not exists slip_events (
+  id uuid primary key default gen_random_uuid(),
+  challenge_id uuid references challenges(id) on delete cascade,
+  user_id uuid not null,
+  date date not null,
+  trigger text not null,
+  time_bucket text not null,
+  place text not null,
+  recovery text[] default '{}',
+  note text,
+  created_at timestamptz default now(),
+  unique (challenge_id, user_id, date)
+);
+
+create table if not exists challenge_reactions (
+  id uuid primary key default gen_random_uuid(),
+  challenge_id uuid references challenges(id) on delete cascade,
+  from_user_id uuid not null,
+  to_user_id uuid not null,
+  date date not null,
+  emoji text not null,
+  created_at timestamptz default now()
+);
+
+alter table slip_events enable row level security;
+alter table challenge_reactions enable row level security;
+
+create policy "self_read_slips" on slip_events for select using (user_id = auth.uid());
+create policy "self_write_slips" on slip_events for insert with check (user_id = auth.uid());
+
+create policy "members_read_reactions" on challenge_reactions for select using (
+  exists (select 1 from challenge_members m where m.challenge_id = challenge_id and m.user_id = auth.uid())
+);
+create policy "self_write_reactions" on challenge_reactions for insert with check (from_user_id = auth.uid());
